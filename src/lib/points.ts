@@ -1,12 +1,12 @@
 import { BASE_CLOCK_IN_POINTS } from "./constants";
 
 /** Proximity bonus: when there is at least one nearby user, everyone in the group gets this many points. */
-export const PROXIMITY_BONUS_POINTS = 10;
+export const PROXIMITY_BONUS_POINTS = 15;
 
 /**
  * Calculate bonus points when there are nearby users with active clock-ins.
- * When there is at least one nearby user, the clocking-in user gets +10.
- * Nearby users also receive +10 each (applied in the clock-in API).
+ * When there is at least one nearby user, the clocking-in user gets +15.
+ * Nearby users also receive +15 each (applied in the clock-in API).
  */
 export function calculateNearbyPoints(nearbyCount: number): number {
   return nearbyCount >= 1 ? PROXIMITY_BONUS_POINTS : 0;

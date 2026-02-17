@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
       nearbyUserCount: nearbyCount,
     });
 
-    // ── Give +10 proximity bonus to each nearby user's active clock-in ───
+    // ── Give +15 proximity bonus to each nearby user's active clock-in ───
     if (nearbyCount >= 1) {
       const nearbyIds = nearbyClockIns.map(
         (doc: { _id: ObjectId }) => doc._id

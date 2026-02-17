@@ -9,7 +9,7 @@ const JWT_SECRET = new TextEncoder().encode(
 const PUBLIC_PATHS = ["/login", "/register"];
 const API_AUTH_PATHS = ["/api/auth/login", "/api/auth/register"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow public auth API routes

@@ -5,10 +5,10 @@ export const CLOCK_IN_DURATION_MS = 90 * 60 * 1000; // 1 hour 30 minutes
 export const NEARBY_RADIUS_METERS = 100;
 
 /** Base points awarded per clock-in. */
-export const BASE_CLOCK_IN_POINTS = 10;
+export const BASE_CLOCK_IN_POINTS = 5;
 
 /** Polling interval for fetching active clock-ins (in milliseconds). */
-export const POLL_INTERVAL_MS = 12_000; // 12 seconds
+export const POLL_INTERVAL_MS = 30_000; // 30 seconds
 
 /** Default map center: Atlanta, GA (33.7760045° N, 84.3965908° W). */
 export const MAP_CENTER = {
