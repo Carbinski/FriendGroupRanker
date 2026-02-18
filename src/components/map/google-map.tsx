@@ -252,7 +252,7 @@ export default function MapView({
           />
         )}
 
-        {/* Clock-in markers – opacity increases the longer ago the pin was placed */}
+        {/* Clock-in markers – opacity slowly fades as expiration approaches */}
         {clockIns.map((ci) => (
             <Marker
               key={ci.id}

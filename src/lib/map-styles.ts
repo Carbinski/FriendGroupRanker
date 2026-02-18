@@ -40,16 +40,16 @@ export const DARK_MAP_STYLES: google.maps.MapTypeStyle[] = [
   },
 ];
 
-/** Min/max opacity for clock-in pins; opacity increases over time since placed. */
+/** Min/max opacity for clock-in pins; opacity decreases (fades out) as expiration approaches. */
 const CLOCK_IN_PIN_OPACITY_MIN = 0.35;
 const CLOCK_IN_PIN_OPACITY_MAX = 1;
 
-/** Opacity for a clock-in pin based on how long ago it was placed. */
+/** Opacity for a clock-in pin: starts fully visible, slowly fades out as expiration approaches. */
 export function getClockInPinOpacity(clockedInAt: string): number {
   const elapsed = Date.now() - new Date(clockedInAt).getTime();
   const progress = Math.min(1, Math.max(0, elapsed / CLOCK_IN_DURATION_MS));
   return (
-    CLOCK_IN_PIN_OPACITY_MIN +
+    CLOCK_IN_PIN_OPACITY_MAX -
     (CLOCK_IN_PIN_OPACITY_MAX - CLOCK_IN_PIN_OPACITY_MIN) * progress
   );
 }
