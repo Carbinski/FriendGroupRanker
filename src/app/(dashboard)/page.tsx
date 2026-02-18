@@ -92,7 +92,7 @@ export default function DashboardPage() {
             />
           </Button>
           {showActiveList && (
-            <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] rounded-lg border border-slate-700 bg-slate-800/95 py-1 shadow-xl backdrop-blur-md">
+            <div className="absolute right-0 top-full z-20 mt-1 min-w-[200px] rounded-lg border border-slate-700 bg-slate-800/95 py-1 shadow-xl backdrop-blur-md">
               {clockIns.length === 0 ? (
                 <p className="px-3 py-2 text-sm text-slate-500">
                   No one active
@@ -107,9 +107,12 @@ export default function DashboardPage() {
                           setPanToTarget({ lat: ci.lat, lng: ci.lng });
                           setShowActiveList(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-white hover:bg-slate-700/80"
+                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm text-white hover:bg-slate-700/80"
                       >
-                        {ci.displayName}
+                        <span className="min-w-0 truncate">{ci.displayName}</span>
+                        <span className="shrink-0 text-emerald-400 tabular-nums">
+                          {ci.pointsEarned} pts
+                        </span>
                       </button>
                     </li>
                   ))}

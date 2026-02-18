@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { findBonusZone } from "@/lib/bonus-zones";
+import { findBonusZone, findRedZone } from "@/lib/bonus-zones";
 import { calculateTotalPoints } from "@/lib/points";
 import {
   CLOCK_IN_DURATION_MS,
@@ -116,8 +116,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ── Check bonus zone ──────────────────────────────────────────────
-    const bonusZone = findBonusZone(lat, lng);
+    // ── Check red zone (no points if clock-in here when zone is active) ─
+    const redZone = findRedZone(lat, lng, now);
+    if (redZone) {
+      const result = await db.collection("clockins").insertOne({
+        userId,
+        location: {
+          type: "Point",
+          coordinates: [lng, lat],
+        },
+        clockedInAt: now,
+        expiresAt: new Date(now.getTime() + CLOCK_IN_DURATION_MS),
+        pointsEarned: 0,
+        bonusZoneId: null,
+        nearbyUserCount: 0,
+      });
+      const user = (await db
+        .collection("users")
+        .findOne({ _id: userId })) as UserDocument | null;
+      const clockInData: ClockInPublic = {
+        id: result.insertedId.toString(),
+        userId: userId.toString(),
+        displayName: user?.displayName ?? "Unknown",
+        lat,
+        lng,
+        clockedInAt: now.toISOString(),
+        expiresAt: new Date(
+          now.getTime() + CLOCK_IN_DURATION_MS
+        ).toISOString(),
+        pointsEarned: 0,
+      };
+      return NextResponse.json<ApiResponse<ClockInPublic>>(
+        { success: true, data: clockInData },
+        { status: 201 }
+      );
+    }
+
+    // ── Check bonus zone (respects activeHours) ───────────────────────
+    const bonusZone = findBonusZone(lat, lng, now);
     const bonusZonePoints = bonusZone?.points ?? 0;
 
     // ── Count nearby active users (within NEARBY_RADIUS_METERS) ──────

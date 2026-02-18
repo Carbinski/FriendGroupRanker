@@ -51,18 +51,40 @@ export interface LeaderboardEntry {
   clockInCount: number;
 }
 
+// ─── Zone Bounds (shared) ─────────────────────────────────────────────────────
+
+export interface ZoneBounds {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+}
+
+/** Hour of day (0–23). Zone is active when current hour is in [startHour, endHour]. */
+export interface ActiveHours {
+  startHour: number;
+  endHour: number;
+}
+
 // ─── Bonus Zone ──────────────────────────────────────────────────────────────
 
 export interface BonusZone {
   id: string;
   name: string;
-  bounds: {
-    north: number;
-    south: number;
-    east: number;
-    west: number;
-  };
+  bounds: ZoneBounds;
   points: number;
+  /** If set, zone only awards bonus during these hours (local time). */
+  activeHours?: ActiveHours;
+}
+
+// ─── Red Zone (no points if user clock-in here) ───────────────────────────────
+
+export interface RedZone {
+  id: string;
+  name: string;
+  bounds: ZoneBounds;
+  /** If set, zone only blocks points during these hours (local time). */
+  activeHours?: ActiveHours;
 }
 
 // ─── API Request/Response Shapes ─────────────────────────────────────────────

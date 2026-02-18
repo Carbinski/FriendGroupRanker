@@ -10,10 +10,15 @@ import {
   Autocomplete,
 } from "@react-google-maps/api";
 import { MAP_CENTER, MAP_ZOOM, CLOCK_IN_DURATION_MS } from "@/lib/constants";
-import { BONUS_ZONES } from "@/lib/bonus-zones";
+import {
+  BONUS_ZONES,
+  RED_ZONES,
+  isZoneActiveAt,
+} from "@/lib/bonus-zones";
 import type { ClockInPublic } from "@/types";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, Plus, Minus, Locate } from "lucide-react";
 
 const containerStyle = {
   width: "100%",
@@ -143,6 +148,27 @@ export default function MapView({
     }
   }, []);
 
+  const handleZoomIn = useCallback(() => {
+    if (mapRef.current) {
+      const zoom = mapRef.current.getZoom() ?? MAP_ZOOM;
+      mapRef.current.setZoom(Math.min(zoom + 1, 21));
+    }
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    if (mapRef.current) {
+      const zoom = mapRef.current.getZoom() ?? MAP_ZOOM;
+      mapRef.current.setZoom(Math.max(zoom - 1, 0));
+    }
+  }, []);
+
+  const handleCenterOnUser = useCallback(() => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.panTo(userLocation);
+      mapRef.current.setZoom(17);
+    }
+  }, [userLocation]);
+
   function formatTimeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60_000);
@@ -190,6 +216,41 @@ export default function MapView({
         </Autocomplete>
       </div>
 
+      {/* Custom map controls – themed to match app (bottom right) */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1 rounded-lg border border-slate-600 bg-slate-800/95 p-1 shadow-lg backdrop-blur-sm">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleZoomIn}
+          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white"
+          aria-label="Zoom in"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleZoomOut}
+          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white"
+          aria-label="Zoom out"
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleCenterOnUser}
+          disabled={!userLocation}
+          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50"
+          aria-label="Center on your location"
+        >
+          <Locate className="h-4 w-4" />
+        </Button>
+      </div>
+
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={mapCenter}
@@ -197,10 +258,11 @@ export default function MapView({
         onLoad={onLoad}
         options={{
           disableDefaultUI: false,
-          zoomControl: true,
+          zoomControl: false,
           streetViewControl: false,
           mapTypeControl: false,
           fullscreenControl: false,
+          scaleControl: false,
           styles: [
             { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
             {
@@ -236,24 +298,50 @@ export default function MapView({
         }}
       >
         {/* Bonus zone rectangles */}
-        {BONUS_ZONES.map((zone) => (
-          <Rectangle
-            key={zone.id}
-            bounds={{
-              north: zone.bounds.north,
-              south: zone.bounds.south,
-              east: zone.bounds.east,
-              west: zone.bounds.west,
-            }}
-            options={{
-              fillColor: "#10b981",
-              fillOpacity: 0.15,
-              strokeColor: "#10b981",
-              strokeOpacity: 0.6,
-              strokeWeight: 2,
-            }}
-          />
-        ))}
+        {BONUS_ZONES.map((zone) => {
+          const active = isZoneActiveAt(zone, new Date());
+          return (
+            <Rectangle
+              key={zone.id}
+              bounds={{
+                north: zone.bounds.north,
+                south: zone.bounds.south,
+                east: zone.bounds.east,
+                west: zone.bounds.west,
+              }}
+              options={{
+                fillColor: "#10b981",
+                fillOpacity: active ? 0.15 : 0.05,
+                strokeColor: "#10b981",
+                strokeOpacity: active ? 0.6 : 0.25,
+                strokeWeight: 2,
+              }}
+            />
+          );
+        })}
+
+        {/* Red zone rectangles (no points if clock-in here when active) */}
+        {RED_ZONES.map((zone) => {
+          const active = isZoneActiveAt(zone, new Date());
+          return (
+            <Rectangle
+              key={zone.id}
+              bounds={{
+                north: zone.bounds.north,
+                south: zone.bounds.south,
+                east: zone.bounds.east,
+                west: zone.bounds.west,
+              }}
+              options={{
+                fillColor: "#ef4444",
+                fillOpacity: active ? 0.15 : 0.05,
+                strokeColor: "#ef4444",
+                strokeOpacity: active ? 0.6 : 0.25,
+                strokeWeight: 2,
+              }}
+            />
+          );
+        })}
 
         {/* Current user location marker */}
         {userLocation && (
