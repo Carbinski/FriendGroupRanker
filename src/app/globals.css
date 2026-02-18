@@ -124,3 +124,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Hide default Google Maps controls (we use custom themed controls instead) */
+.gm-style .gmnoprint.gm-bundled-control {
+  display: none !important;
+}
+
+/* Hide Google logo (bottom left) and attribution/footer links (bottom right) */
+.gm-style-cc,
+.gm-style-pbc,
+.gm-style .gm-style-cc,
+.gm-style .gm-style-pbc {
+  display: none !important;
+}
