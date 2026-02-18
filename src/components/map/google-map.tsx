@@ -10,7 +10,11 @@ import {
   Autocomplete,
 } from "@react-google-maps/api";
 import { MAP_CENTER, MAP_ZOOM, CLOCK_IN_DURATION_MS } from "@/lib/constants";
-import { BONUS_ZONES } from "@/lib/bonus-zones";
+import {
+  BONUS_ZONES,
+  RED_ZONES,
+  isZoneActiveAt,
+} from "@/lib/bonus-zones";
 import type { ClockInPublic } from "@/types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -294,24 +298,50 @@ export default function MapView({
         }}
       >
         {/* Bonus zone rectangles */}
-        {BONUS_ZONES.map((zone) => (
-          <Rectangle
-            key={zone.id}
-            bounds={{
-              north: zone.bounds.north,
-              south: zone.bounds.south,
-              east: zone.bounds.east,
-              west: zone.bounds.west,
-            }}
-            options={{
-              fillColor: "#10b981",
-              fillOpacity: 0.15,
-              strokeColor: "#10b981",
-              strokeOpacity: 0.6,
-              strokeWeight: 2,
-            }}
-          />
-        ))}
+        {BONUS_ZONES.map((zone) => {
+          const active = isZoneActiveAt(zone, new Date());
+          return (
+            <Rectangle
+              key={zone.id}
+              bounds={{
+                north: zone.bounds.north,
+                south: zone.bounds.south,
+                east: zone.bounds.east,
+                west: zone.bounds.west,
+              }}
+              options={{
+                fillColor: "#10b981",
+                fillOpacity: active ? 0.15 : 0.05,
+                strokeColor: "#10b981",
+                strokeOpacity: active ? 0.6 : 0.25,
+                strokeWeight: 2,
+              }}
+            />
+          );
+        })}
+
+        {/* Red zone rectangles (no points if clock-in here when active) */}
+        {RED_ZONES.map((zone) => {
+          const active = isZoneActiveAt(zone, new Date());
+          return (
+            <Rectangle
+              key={zone.id}
+              bounds={{
+                north: zone.bounds.north,
+                south: zone.bounds.south,
+                east: zone.bounds.east,
+                west: zone.bounds.west,
+              }}
+              options={{
+                fillColor: "#ef4444",
+                fillOpacity: active ? 0.15 : 0.05,
+                strokeColor: "#ef4444",
+                strokeOpacity: active ? 0.6 : 0.25,
+                strokeWeight: 2,
+              }}
+            />
+          );
+        })}
 
         {/* Current user location marker */}
         {userLocation && (
