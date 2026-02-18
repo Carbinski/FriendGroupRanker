@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { MapPin, Loader2, Clock } from "lucide-react";
+import { formatTimeRemaining } from "@/lib/utils";
 import type { ClockInPublic } from "@/types";
 
 interface ClockInButtonProps {
@@ -25,27 +26,22 @@ export default function ClockInButton({
     [clockIns, currentUserId]
   );
 
-  function formatTimeRemaining(dateStr: string): string {
-    const diff = new Date(dateStr).getTime() - Date.now();
-    if (diff <= 0) return "Expired";
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 60) return `${mins}m`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ${mins % 60}m`;
-  }
-
   async function handleClockIn() {
     setError(null);
     setLastPoints(null);
     setLoading(true);
 
     try {
-      // Get user's current position
+      // Get user's current position. Prefer faster/indoor-friendly options:
+      // - maximumAge: use cached position if under 1 min (instant when coming indoors)
+      // - longer timeout: indoor GPS can be slow
+      // - enableHighAccuracy: false allows WiFi/cell-based fix that works indoors
       const position = await new Promise<GeolocationPosition>(
         (resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10_000,
+            enableHighAccuracy: false,
+            timeout: 25_000,
+            maximumAge: 60_000,
           });
         }
       );
@@ -69,7 +65,19 @@ export default function ClockInButton({
       onClockIn();
     } catch (err) {
       if (err instanceof GeolocationPositionError) {
-        setError("Location access denied. Please enable location services.");
+        switch (err.code) {
+          case GeolocationPositionError.PERMISSION_DENIED:
+            setError("Location access denied. Please allow location for this site.");
+            break;
+          case GeolocationPositionError.POSITION_UNAVAILABLE:
+            setError("Location unavailable. Try moving to an area with better GPS or wait a moment.");
+            break;
+          case GeolocationPositionError.TIMEOUT:
+            setError("Location request timed out. Please try again.");
+            break;
+          default:
+            setError("Could not get your location. Please try again.");
+        }
       } else {
         setError("Failed to clock in. Please try again.");
       }
@@ -84,7 +92,7 @@ export default function ClockInButton({
         <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
           <Clock className="h-4 w-4" />
           <span>
-            Active — {formatTimeRemaining(activeClockIn.expiresAt)} remaining
+            Active — {formatTimeRemaining(activeClockIn.expiresAt, " remaining")}
           </span>
         </div>
       ) : (
