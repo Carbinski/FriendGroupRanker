@@ -7,45 +7,29 @@ import {
   Marker,
   InfoWindow,
   Rectangle,
-  Autocomplete,
 } from "@react-google-maps/api";
-import { MAP_CENTER, MAP_ZOOM, CLOCK_IN_DURATION_MS } from "@/lib/constants";
+import { MAP_CENTER, MAP_ZOOM } from "@/lib/constants";
 import {
   BONUS_ZONES,
   RED_ZONES,
   isZoneActiveAt,
 } from "@/lib/bonus-zones";
+import {
+  MAP_CONTAINER_STYLE,
+  DARK_MAP_STYLES,
+  getClockInPinOpacity,
+  USER_PIN_SCALE,
+  USER_PIN_STROKE_WEIGHT,
+} from "@/lib/map-styles";
 import type { ClockInPublic } from "@/types";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Plus, Minus, Locate } from "lucide-react";
-
-const containerStyle = {
-  width: "100%",
-  height: "100%",
-};
+import { MapSearchBar } from "@/components/map/map-search-bar";
+import { MapControls } from "@/components/map/map-controls";
+import { ClockInInfoWindowContent } from "@/components/map/clock-in-info-window-content";
 
 const LIBRARIES: ("places")[] = ["places"];
 
-/** User pin scale – large so they stand out. */
-const USER_PIN_SCALE = 12;
-const USER_PIN_STROKE_WEIGHT = 3;
-
-/** Min/max opacity for clock-in pins; opacity increases over time since placed. */
-const CLOCK_IN_PIN_OPACITY_MIN = 0.35;
-const CLOCK_IN_PIN_OPACITY_MAX = 1;
-
 /** Re-render interval (ms) so pin opacity updates over time. */
 const OPACITY_TICK_MS = 10_000;
-
-function getClockInPinOpacity(clockedInAt: string): number {
-  const elapsed = Date.now() - new Date(clockedInAt).getTime();
-  const progress = Math.min(1, Math.max(0, elapsed / CLOCK_IN_DURATION_MS));
-  return (
-    CLOCK_IN_PIN_OPACITY_MIN +
-    (CLOCK_IN_PIN_OPACITY_MAX - CLOCK_IN_PIN_OPACITY_MIN) * progress
-  );
-}
 
 interface MapViewProps {
   clockIns: ClockInPublic[];
@@ -169,24 +153,6 @@ export default function MapView({
     }
   }, [userLocation]);
 
-  function formatTimeAgo(dateStr: string): string {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 1) return "Just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ${mins % 60}m ago`;
-  }
-
-  function formatTimeRemaining(dateStr: string): string {
-    const diff = new Date(dateStr).getTime() - Date.now();
-    if (diff <= 0) return "Expired";
-    const mins = Math.floor(diff / 60_000);
-    if (mins < 60) return `${mins}m left`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ${mins % 60}m left`;
-  }
-
   if (!isLoaded) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-slate-900">
@@ -200,59 +166,16 @@ export default function MapView({
 
   return (
     <div className="relative h-full w-full">
-      {/* Search bar overlay */}
-      <div className="absolute left-1/2 top-4 z-10 w-80 -translate-x-1/2">
-        <Autocomplete
-          onLoad={onAutocompleteLoad}
-          onPlaceChanged={onPlaceChanged}
-        >
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              placeholder="Search a location…"
-              className="border-slate-600 bg-slate-800/90 pl-9 text-white shadow-lg backdrop-blur-sm placeholder:text-slate-500"
-            />
-          </div>
-        </Autocomplete>
-      </div>
-
-      {/* Custom map controls – themed to match app (bottom right) */}
-      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-1 rounded-lg border border-slate-600 bg-slate-800/95 p-1 shadow-lg backdrop-blur-sm">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleZoomIn}
-          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white"
-          aria-label="Zoom in"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleZoomOut}
-          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white"
-          aria-label="Zoom out"
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleCenterOnUser}
-          disabled={!userLocation}
-          className="h-9 w-9 rounded-md text-slate-300 hover:bg-slate-700 hover:text-white disabled:opacity-50"
-          aria-label="Center on your location"
-        >
-          <Locate className="h-4 w-4" />
-        </Button>
-      </div>
+      <MapSearchBar onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged} />
+      <MapControls
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onCenterOnUser={handleCenterOnUser}
+        hasUserLocation={!!userLocation}
+      />
 
       <GoogleMap
-        mapContainerStyle={containerStyle}
+        mapContainerStyle={MAP_CONTAINER_STYLE}
         center={mapCenter}
         zoom={MAP_ZOOM}
         onLoad={onLoad}
@@ -263,38 +186,7 @@ export default function MapView({
           mapTypeControl: false,
           fullscreenControl: false,
           scaleControl: false,
-          styles: [
-            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-            {
-              elementType: "labels.text.stroke",
-              stylers: [{ color: "#1a1a2e" }],
-            },
-            {
-              elementType: "labels.text.fill",
-              stylers: [{ color: "#8892b0" }],
-            },
-            {
-              featureType: "road",
-              elementType: "geometry",
-              stylers: [{ color: "#2d2d44" }],
-            },
-            {
-              featureType: "road",
-              elementType: "geometry.stroke",
-              stylers: [{ color: "#1a1a2e" }],
-            },
-            {
-              featureType: "water",
-              elementType: "geometry",
-              stylers: [{ color: "#0e1526" }],
-            },
-            { featureType: "poi", stylers: [{ visibility: "off" }] },
-            {
-              featureType: "poi.park",
-              elementType: "geometry",
-              stylers: [{ color: "#1a2e1a" }],
-            },
-          ],
+          styles: DARK_MAP_STYLES,
         }}
       >
         {/* Bonus zone rectangles */}
@@ -360,7 +252,7 @@ export default function MapView({
           />
         )}
 
-        {/* Clock-in markers – opacity increases the longer ago the pin was placed */}
+        {/* Clock-in markers – opacity slowly fades as expiration approaches */}
         {clockIns.map((ci) => (
             <Marker
               key={ci.id}
@@ -388,18 +280,7 @@ export default function MapView({
             }}
             onCloseClick={() => setSelectedClockIn(null)}
           >
-            <div className="min-w-[180px] p-1">
-              <h3 className="text-base font-semibold text-slate-900">
-                {selectedClockIn.displayName}
-              </h3>
-              <div className="mt-1 space-y-0.5 text-sm text-slate-600">
-                <p>Clocked in: {formatTimeAgo(selectedClockIn.clockedInAt)}</p>
-                <p>Expires: {formatTimeRemaining(selectedClockIn.expiresAt)}</p>
-                <p className="font-medium text-emerald-600">
-                  +{selectedClockIn.pointsEarned} pts
-                </p>
-              </div>
-            </div>
+            <ClockInInfoWindowContent clockIn={selectedClockIn} />
           </InfoWindow>
         )}
       </GoogleMap>
