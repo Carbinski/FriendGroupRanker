@@ -35,10 +35,10 @@ export const BONUS_ZONES: BonusZone[] = [
     id: "zone-1",
     name: "PG 3",
     bounds: {
-      north: 33.7745,
-      south: 33.77422,
-      east: -84.39548,
-      west: -84.39607,
+      north: 33.77452,
+      south: 33.77420,
+      east: -84.39546,
+      west: -84.39609,
     },
     points: 20,
   },
@@ -52,6 +52,28 @@ export const BONUS_ZONES: BonusZone[] = [
       west: -84.39903,
     },
     points: 10,
+  },
+  {
+    id: "zone-3",
+    name: "CULC",
+    bounds: {
+      north: 33.77414,
+      south: 33.77515,
+      east: -84.39614,
+      west: -84.39662,
+    },
+    points: 7,
+  },
+  {
+    id: "zone-4",
+    name: "CODA",
+    bounds: {
+      north: 33.77585,
+      south: 33.77515,
+      east: -84.3874,
+      west: -84.38872,
+    },
+    points: 7,
   },
 ];
 
