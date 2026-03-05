@@ -3,11 +3,14 @@ import type { ApiResponse } from "@/types";
 import { requireAdmin, AdminAuthError } from "@/lib/admin";
 import { ZoneService } from "@/lib/zone-service";
 
-export async function DELETE(_req: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
     await requireAdmin();
 
-    const id = context.params.id;
+    const { id } = await context.params;
     const deleted = await ZoneService.deleteZone(id);
 
     if (!deleted) {

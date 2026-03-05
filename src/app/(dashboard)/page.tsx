@@ -154,6 +154,7 @@ export default function DashboardPage() {
           <AdminToolbar
             isOpen={showAdminToolbar}
             zones={zones}
+            drawingZoneType={drawingZoneType}
             onClose={() => setShowAdminToolbar(false)}
             onStartDrawBonus={() => setDrawingZoneType("bonus")}
             onStartDrawRed={() => setDrawingZoneType("red")}

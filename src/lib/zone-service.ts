@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/db";
+import { isZoneActiveAt } from "@/lib/zone-utils";
 import type { ActiveHours, ZoneDocument } from "@/types";
 
 export interface CreateZoneInput {
@@ -20,15 +21,7 @@ export class ZoneService {
     zone: { activeHours?: ActiveHours },
     date: Date
   ): boolean {
-    const { activeHours } = zone;
-    if (!activeHours) return true;
-    const hour = date.getHours();
-    const { startHour, endHour } = activeHours;
-    if (startHour <= endHour) {
-      return hour >= startHour && hour <= endHour;
-    }
-    // Overnight window (e.g. 22–6)
-    return hour >= startHour || hour <= endHour;
+    return isZoneActiveAt(zone, date);
   }
 
   static async getAllZones(): Promise<ZoneDocument[]> {

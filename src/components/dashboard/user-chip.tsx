@@ -35,7 +35,7 @@ export function UserChip({
   };
 
   return (
-    <div className="pointer-events-auto relative">
+    <div className="pointer-events-auto relative w-fit">
       <button
         type="button"
         onClick={handleToggleMenu}
@@ -49,7 +49,7 @@ export function UserChip({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-40 rounded-lg border border-slate-700 bg-slate-900/95 py-1 text-sm text-slate-100 shadow-xl backdrop-blur">
+        <div className="absolute left-0 top-full mt-2 w-40 rounded-lg border border-slate-700 bg-slate-900/95 py-1 text-sm text-slate-100 shadow-xl backdrop-blur">
           {isAdmin && (
             <button
               type="button"

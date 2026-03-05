@@ -10,7 +10,7 @@ import {
   DrawingManager,
 } from "@react-google-maps/api";
 import { MAP_CENTER, MAP_ZOOM } from "@/lib/constants";
-import { isZoneActiveAt } from "@/lib/bonus-zones";
+import { isZoneActiveAt } from "@/lib/zone-utils";
 import {
   MAP_CONTAINER_STYLE,
   DARK_MAP_STYLES,

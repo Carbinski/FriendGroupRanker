@@ -7,6 +7,7 @@ import { ZoneListItem } from "@/components/admin/zone-list-item";
 interface AdminToolbarProps {
   isOpen: boolean;
   zones: ZonePublic[];
+  drawingZoneType: "bonus" | "red" | null;
   onClose: () => void;
   onStartDrawBonus: () => void;
   onStartDrawRed: () => void;
@@ -16,6 +17,7 @@ interface AdminToolbarProps {
 export function AdminToolbar({
   isOpen,
   zones,
+  drawingZoneType,
   onClose,
   onStartDrawBonus,
   onStartDrawRed,
@@ -48,16 +50,23 @@ export function AdminToolbar({
           type="button"
           size="sm"
           onClick={onStartDrawBonus}
-          className="h-8 flex-1 rounded-full bg-emerald-600 text-[11px] font-semibold text-white hover:bg-emerald-500"
+          className={`h-8 flex-1 rounded-full text-[11px] font-semibold text-emerald-300 hover:text-white hover:bg-emerald-500 ${
+            drawingZoneType === "bonus"
+              ? "bg-emerald-600 text-white"
+              : "bg-emerald-600/20"
+          }`}
         >
           Draw bonus zone
         </Button>
         <Button
           type="button"
           size="sm"
-          variant="outline"
           onClick={onStartDrawRed}
-          className="h-8 flex-1 rounded-full border-red-500/60 text-[11px] font-semibold text-red-300 hover:bg-red-500/20 hover:text-red-100"
+          className={`h-8 flex-1 rounded-full text-[11px] font-semibold text-red-300 hover:text-white hover:bg-red-500 ${
+            drawingZoneType === "red"
+              ? "bg-red-600 text-white"
+              : "bg-red-600/20"
+          }`}
         >
           Draw red zone
         </Button>
