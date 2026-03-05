@@ -1,0 +1,39 @@
+---
+description: Admin zone management and testing conventions for future agents
+globs: 
+alwaysApply: false
+---
+
+# Admin Zone Management & Conventions
+
+## Admin Feature Architecture
+
+- **Admin flag**: Stored on the user document in MongoDB as `isAdmin: boolean`. If missing, it is treated as `false` and auto-migrated on first `/api/auth/me` or `requireAdmin()`.
+- **Bootstrap**: Set `isAdmin: true` manually in MongoDB (e.g. Atlas UI) for the first admin account.
+- **Admin entry point**: User chip in the dashboard top bar is a dropdown. Admins see a "Manage zones" option that toggles the admin toolbar.
+
+## Zone Data Model
+
+- **Storage**: MongoDB collection `zones`.
+- **Schema**: Each document has `type` ("bonus" | "red"), `name`, `polygon` (GeoJSON `Polygon` with `coordinates: [ [ [lng, lat], ... ] ]`), `points` (0 for red zones), optional `activeHours`, `createdBy` (ObjectId), `createdAt`.
+- **Index**: `zones.polygon` has a `2dsphere` index for `$geoIntersects` / point-in-polygon queries.
+- **API types**: `ZoneDocument` (DB), `ZonePublic` (API response; polygon as raw coordinates array).
+
+## API Conventions
+
+- **Auth**: All admin routes use `requireAdmin()` from `@/lib/admin`. It throws `AdminAuthError` (401 unauthenticated, 403 not admin). Catch and return the appropriate status.
+- **Zones**: `GET /api/zones` — returns all zones (auth required). `POST /api/admin/zones` — create zone (admin only). `DELETE /api/admin/zones/[id]` — delete zone (admin only).
+- **Clock-in**: Bonus/red zone lookup uses `ZoneService.findZoneAtPoint(lat, lng, type, date)` with MongoDB geospatial queries.
+
+## Adding New Admin Features
+
+1. Protect the route with `requireAdmin()` and handle `AdminAuthError`.
+2. Add any new collections/indexes in `src/lib/db.ts` `ensureIndexes()`.
+3. Expose admin-only UI from the user chip dropdown or the admin toolbar.
+
+## Testing
+
+- **Framework**: Vitest. Config: `vitest.config.ts`; path alias `@` → `src`.
+- **Integration tests**: Use `mongodb-memory-server`. Cache dir: `.cache/mongodb-binaries` (set via `MONGOMS_DOWNLOAD_DIR` in `vitest.setup.ts`). Tests run with `fileParallelism: false` to avoid lock conflicts.
+- **Running tests**: `npm run test`. First run may download MongoDB; if you see `Md5CheckFailedError`, remove `.cache/mongodb-binaries` and run again.
+- **Key test files**: `src/__tests__/zone-service.test.ts`, `admin-auth.test.ts`, `zone-api.test.ts`, `clockin-zones.test.ts`. Auth is mocked with `vi.mock("@/lib/auth")`; DB is cleared in `beforeEach` and uses `clearDbCache()` before `getDb()` in `beforeAll` so each file uses its own in-memory instance.

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { findBonusZone, findRedZone } from "@/lib/bonus-zones";
 import { calculateTotalPoints } from "@/lib/points";
 import {
   CLOCK_IN_DURATION_MS,
@@ -16,6 +15,7 @@ import type {
   ClockInDocument,
   UserDocument,
 } from "@/types";
+import { ZoneService } from "@/lib/zone-service";
 
 // ─── GET: Fetch all active (non-expired) clock-ins ─────────────────────────
 
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Check red zone (no points if clock-in here when zone is active) ─
-    const redZone = findRedZone(lat, lng, now);
+    const redZone = await ZoneService.findZoneAtPoint(lat, lng, "red", now);
     if (redZone) {
       const result = await db.collection("clockins").insertOne({
         userId,
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Check bonus zone (respects activeHours) ───────────────────────
-    const bonusZone = findBonusZone(lat, lng, now);
+    const bonusZone = await ZoneService.findZoneAtPoint(lat, lng, "bonus", now);
     const bonusZonePoints = bonusZone?.points ?? 0;
 
     // ── Count nearby active users (within NEARBY_RADIUS_METERS) ──────

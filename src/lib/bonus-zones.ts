@@ -110,6 +110,16 @@ export const RED_ZONES: RedZone[] = [
       west: -84.38870,
     },
   },
+  {
+    id: "red-3",
+    name: "Rambler",
+    bounds: {
+      north: 33.77490,
+      south: 33.77466,
+      east: -84.38473,
+      west: -84.38609,
+    },
+  },
 ];
 
 /** Check if a coordinate falls within any bonus zone that is active at the given time. Returns the zone or null. */
