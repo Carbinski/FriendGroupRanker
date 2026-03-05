@@ -16,7 +16,7 @@ export async function GET() {
 
     const db = await getDb();
     const user = (await db
-      .collection("users")
+      .collection<UserDocument>("users")
       .findOne({ _id: new ObjectId(payload.userId) })) as UserDocument | null;
 
     if (!user) {
@@ -26,11 +26,20 @@ export async function GET() {
       );
     }
 
+    // Auto-migrate legacy users that do not yet have an isAdmin flag.
+    if (typeof user.isAdmin === "undefined") {
+      await db
+        .collection<UserDocument>("users")
+        .updateOne({ _id: user._id }, { $set: { isAdmin: false } });
+      user.isAdmin = false;
+    }
+
     const userData: UserPublic = {
       id: user._id.toString(),
       email: user.email,
       displayName: user.displayName,
       createdAt: user.createdAt.toISOString(),
+      isAdmin: Boolean(user.isAdmin),
     };
 
     return NextResponse.json<ApiResponse<UserPublic>>({

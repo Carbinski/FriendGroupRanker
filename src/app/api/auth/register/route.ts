@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       email: email.toLowerCase(),
       displayName: displayName.trim(),
       createdAt: new Date().toISOString(),
+      isAdmin: false,
     };
 
     const response = NextResponse.json<ApiResponse<UserPublic>>(

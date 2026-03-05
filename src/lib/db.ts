@@ -4,6 +4,14 @@ let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
 /**
+ * Clears the cached DB connection. Used in tests to switch to a new URI.
+ */
+export function clearDbCache(): void {
+  cachedClient = null;
+  cachedDb = null;
+}
+
+/**
  * Returns a cached MongoDB database connection.
  * Re-uses the connection across hot reloads in development.
  */
@@ -38,6 +46,11 @@ export async function ensureIndexes(): Promise<void> {
 
   // Unique email index on users
   await db.collection("users").createIndex({ email: 1 }, { unique: true });
+
+  // 2dsphere index for geospatial queries on zones (GeoJSON polygons)
+  await db
+    .collection("zones")
+    .createIndex({ polygon: "2dsphere" });
 
   // 2dsphere index for geospatial queries on clock-ins
   await db

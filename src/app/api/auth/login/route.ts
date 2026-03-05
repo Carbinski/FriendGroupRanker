@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       displayName: user.displayName,
       createdAt: user.createdAt.toISOString(),
+      isAdmin: Boolean(user.isAdmin),
     };
 
     const response = NextResponse.json<ApiResponse<UserPublic>>(

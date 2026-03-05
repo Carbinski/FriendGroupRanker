@@ -6,14 +6,11 @@ import {
   useJsApiLoader,
   Marker,
   InfoWindow,
-  Rectangle,
+  Polygon,
+  DrawingManager,
 } from "@react-google-maps/api";
 import { MAP_CENTER, MAP_ZOOM } from "@/lib/constants";
-import {
-  BONUS_ZONES,
-  RED_ZONES,
-  isZoneActiveAt,
-} from "@/lib/bonus-zones";
+import { isZoneActiveAt } from "@/lib/zone-utils";
 import {
   MAP_CONTAINER_STYLE,
   DARK_MAP_STYLES,
@@ -21,12 +18,12 @@ import {
   USER_PIN_SCALE,
   USER_PIN_STROKE_WEIGHT,
 } from "@/lib/map-styles";
-import type { ClockInPublic } from "@/types";
+import type { ClockInPublic, ZonePublic } from "@/types";
 import { MapSearchBar } from "@/components/map/map-search-bar";
 import { MapControls } from "@/components/map/map-controls";
 import { ClockInInfoWindowContent } from "@/components/map/clock-in-info-window-content";
 
-const LIBRARIES: ("places")[] = ["places"];
+const LIBRARIES: ("places" | "drawing")[] = ["places", "drawing"];
 
 /** Re-render interval (ms) so pin opacity updates over time. */
 const OPACITY_TICK_MS = 10_000;
@@ -37,6 +34,21 @@ interface MapViewProps {
   /** When set, the map will pan to this position and then clear it. */
   panToTarget?: { lat: number; lng: number } | null;
   onPanDone?: () => void;
+  /** When true, admin drawing controls are enabled. */
+  adminMode?: boolean;
+  /**
+   * When set, the map will enter drawing mode for the given zone type.
+   * When a polygon is completed, onPolygonComplete is called and the parent
+   * is expected to reset this back to null.
+   */
+  drawingZoneType?: "bonus" | "red" | null;
+  /** Zones to render as polygons on the map. */
+  zones?: ZonePublic[];
+  /** Callback when an admin finishes drawing a polygon. */
+  onPolygonComplete?: (
+    type: "bonus" | "red",
+    path: google.maps.LatLngLiteral[]
+  ) => void;
 }
 
 export default function MapView({
@@ -44,6 +56,10 @@ export default function MapView({
   currentUserId,
   panToTarget = null,
   onPanDone,
+  adminMode = false,
+  drawingZoneType = null,
+  zones = [],
+  onPolygonComplete,
 }: MapViewProps) {
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -153,6 +169,26 @@ export default function MapView({
     }
   }, [userLocation]);
 
+  const handlePolygonComplete = useCallback(
+    (polygon: google.maps.Polygon) => {
+      if (!drawingZoneType || !onPolygonComplete) {
+        polygon.setMap(null);
+        return;
+      }
+
+      const path = polygon.getPath();
+      const points: google.maps.LatLngLiteral[] = [];
+      for (let i = 0; i < path.getLength(); i += 1) {
+        const pt = path.getAt(i);
+        points.push({ lat: pt.lat(), lng: pt.lng() });
+      }
+
+      polygon.setMap(null);
+      onPolygonComplete(drawingZoneType, points);
+    },
+    [drawingZoneType, onPolygonComplete]
+  );
+
   if (!isLoaded) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-slate-900">
@@ -189,22 +225,21 @@ export default function MapView({
           styles: DARK_MAP_STYLES,
         }}
       >
-        {/* Bonus zone rectangles */}
-        {BONUS_ZONES.map((zone) => {
+        {/* Render zones from the database as polygons */}
+        {zones.map((zone) => {
           const active = isZoneActiveAt(zone, new Date());
+          const outerRing = zone.polygon[0] ?? [];
+          const path = outerRing.map(([lng, lat]) => ({ lat, lng }));
+          const isBonus = zone.type === "bonus";
+
           return (
-            <Rectangle
+            <Polygon
               key={zone.id}
-              bounds={{
-                north: zone.bounds.north,
-                south: zone.bounds.south,
-                east: zone.bounds.east,
-                west: zone.bounds.west,
-              }}
+              path={path}
               options={{
-                fillColor: "#10b981",
+                fillColor: isBonus ? "#10b981" : "#ef4444",
                 fillOpacity: active ? 0.15 : 0.05,
-                strokeColor: "#10b981",
+                strokeColor: isBonus ? "#10b981" : "#ef4444",
                 strokeOpacity: active ? 0.6 : 0.25,
                 strokeWeight: 2,
               }}
@@ -212,28 +247,24 @@ export default function MapView({
           );
         })}
 
-        {/* Red zone rectangles (no points if clock-in here when active) */}
-        {RED_ZONES.map((zone) => {
-          const active = isZoneActiveAt(zone, new Date());
-          return (
-            <Rectangle
-              key={zone.id}
-              bounds={{
-                north: zone.bounds.north,
-                south: zone.bounds.south,
-                east: zone.bounds.east,
-                west: zone.bounds.west,
-              }}
-              options={{
-                fillColor: "#ef4444",
-                fillOpacity: active ? 0.15 : 0.05,
-                strokeColor: "#ef4444",
-                strokeOpacity: active ? 0.6 : 0.25,
+        {/* Admin drawing manager for new zones */}
+        {adminMode && drawingZoneType && (
+          <DrawingManager
+            onPolygonComplete={handlePolygonComplete}
+            options={{
+              drawingControl: false,
+              drawingMode:
+                google.maps.drawing.OverlayType.POLYGON,
+              polygonOptions: {
+                fillColor: drawingZoneType === "bonus" ? "#10b981" : "#ef4444",
+                fillOpacity: 0.2,
+                strokeColor: drawingZoneType === "bonus" ? "#10b981" : "#ef4444",
+                strokeOpacity: 0.8,
                 strokeWeight: 2,
-              }}
-            />
-          );
-        })}
+              },
+            }}
+          />
+        )}
 
         {/* Current user location marker */}
         {userLocation && (

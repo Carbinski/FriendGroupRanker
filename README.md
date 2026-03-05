@@ -81,16 +81,7 @@ Add the same environment variables in Vercel's project settings.
 
 ## Adding Bonus Zones
 
-Edit `src/lib/bonus-zones.ts` and add entries to the `BONUS_ZONES` array:
-
-```ts
-{
-  id: "zone-2",
-  name: "Coffee Shop",
-  bounds: { north: 33.778, south: 33.776, east: -84.394, west: -84.396 },
-  points: 50,
-}
-```
+Zones are stored in the database. Use the admin zones API (e.g. `POST /api/admin/zones`) or the map’s admin drawing tools to create and edit bonus and red zones.
 
 ## Project Structure
 
@@ -109,7 +100,7 @@ src/
 │   ├── providers/        # AuthProvider context
 │   └── ui/               # shadcn components
 ├── hooks/                # useActiveClockIns, useLeaderboard
-├── lib/                  # db, auth, points, bonus-zones, constants
+├── lib/                  # db, auth, points, zone-utils, zone-service, constants
 └── types/                # TypeScript interfaces
 ```
 

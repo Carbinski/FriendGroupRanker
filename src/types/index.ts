@@ -8,6 +8,8 @@ export interface UserDocument {
   passwordHash: string;
   displayName: string;
   createdAt: Date;
+  /** Flag indicating whether the user is an admin. Defaults to false when missing. */
+  isAdmin?: boolean;
 }
 
 export interface ClockInDocument {
@@ -31,6 +33,8 @@ export interface UserPublic {
   email: string;
   displayName: string;
   createdAt: string;
+  /** Admin flag exposed to the client. */
+  isAdmin: boolean;
 }
 
 export interface ClockInPublic {
@@ -64,6 +68,38 @@ export interface ZoneBounds {
 export interface ActiveHours {
   startHour: number;
   endHour: number;
+}
+
+// ─── Zones stored in MongoDB (GeoJSON Polygon) ─────────────────────────────────
+
+export interface ZoneDocument {
+  _id: ObjectId;
+  type: "bonus" | "red";
+  name: string;
+  polygon: {
+    type: "Polygon";
+    /**
+     * GeoJSON polygon coordinates: [ [ [lng, lat], ... ] ]
+     * The outer array is rings; we only use a single outer ring.
+     */
+    coordinates: [number, number][][];
+  };
+  /** Points awarded for this zone. For red zones this will be 0. */
+  points: number;
+  /** Optional active hours; when omitted the zone is always active. */
+  activeHours?: ActiveHours;
+  createdBy: ObjectId;
+  createdAt: Date;
+}
+
+export interface ZonePublic {
+  id: string;
+  type: "bonus" | "red";
+  name: string;
+  polygon: [number, number][][];
+  points: number;
+  activeHours?: ActiveHours;
+  createdAt: string;
 }
 
 // ─── Bonus Zone ──────────────────────────────────────────────────────────────
