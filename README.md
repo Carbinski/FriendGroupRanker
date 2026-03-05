@@ -7,7 +7,8 @@ A real-time web app that lets friend groups track engagement through map-based c
 - **Email/Password Auth** — Sign up and log in; sessions persist across refreshes via HTTP-only JWT cookies.
 - **Interactive Map** — Dark-themed Google Map centered on Atlanta with Places search.
 - **Clock-In System** — Users clock in at their location; a pin appears on the map for 1 hour 30 minutes.
-- **Points & Bonus Zones** — Earn base points per clock-in, bonus points inside designated zones, and extra points when nearby friends are also clocked in.
+- **Points & Zones** — Earn base points per clock-in; bonus zones award configurable extra points (with optional active hours); red zones always give 0 points when you clock in inside them (optional active hours). Zones are stored in the database and managed by admins.
+- **Admin Zone Management** — Admins can create, edit, and delete bonus and red zones via the map’s drawing tools (user chip → “Manage zones”) or the zones API.
 - **Leaderboard** — Global leaderboard with All Time / Month / Week filters.
 - **Polling** — Map pins refresh every 12 seconds so you can see when friends arrive.
 
@@ -73,15 +74,20 @@ Add the same environment variables in Vercel's project settings.
 
 | Action | Points |
 |--------|--------|
-| Base clock-in | +10 |
-| Inside a bonus zone | +50 |
-| 1 nearby user (within 100 m) | +5 |
-| 2 nearby users | +15 |
-| 3+ nearby users | +30 |
+| Base clock-in | +5 |
+| Inside a bonus zone | Set per zone by admin (e.g. +50) |
+| 1+ nearby users (within 400 m) | +15 (proximity bonus) |
 
-## Adding Bonus Zones
+## Zones (Bonus & Red)
 
-Zones are stored in the database. Use the admin zones API (e.g. `POST /api/admin/zones`) or the map’s admin drawing tools to create and edit bonus and red zones.
+Zones are stored in MongoDB and can have optional **active hours** (local time); when set, the zone only applies during that window.
+
+- **Bonus zones** — Award extra points when you clock in inside them. The points value is **configurable per zone** (set by the admin when creating the zone). If the zone has active hours, bonus points are only awarded when the clock-in falls within that time range.
+- **Red zones** — Clocking in inside a red zone **always awards 0 points** (no base, no bonus, no proximity). The pin still appears on the map. If the zone has active hours, points are only zeroed when the clock-in falls within that window; outside those hours the clock-in is treated as normal.
+
+- **Via UI**: Sign in as an admin, click your user chip in the top bar → “Manage zones”, then use the toolbar to draw and edit polygons.
+- **Via API**: `GET /api/zones` (auth), `POST /api/admin/zones` (admin), `DELETE /api/admin/zones/[id]` (admin).
+- **First admin**: Set `isAdmin: true` on your user document in MongoDB (e.g. Atlas UI) to enable the admin UI and API.
 
 ## Project Structure
 
@@ -92,17 +98,30 @@ src/
 │   ├── (dashboard)/      # Main map page (protected)
 │   └── api/
 │       ├── auth/         # register, login, me, logout
+│       ├── admin/zones/  # POST create zone, DELETE zone (admin only)
 │       ├── clockin/      # GET active pins, POST new clock-in
-│       └── leaderboard/  # GET leaderboard with time range
+│       ├── leaderboard/  # GET leaderboard with time range
+│       └── zones/        # GET all zones (auth required)
 ├── components/
-│   ├── dashboard/        # ClockInButton, Leaderboard
+│   ├── admin/            # Zone form modal, admin toolbar
+│   ├── dashboard/        # ClockInButton, Leaderboard, user chip
 │   ├── map/              # GoogleMap wrapper
 │   ├── providers/        # AuthProvider context
 │   └── ui/               # shadcn components
 ├── hooks/                # useActiveClockIns, useLeaderboard
-├── lib/                  # db, auth, points, zone-utils, zone-service, constants
+├── lib/                  # db, auth, points, zone-service, zone-utils, admin, constants
 └── types/                # TypeScript interfaces
 ```
+
+## Testing
+
+Tests use **Vitest** and **mongodb-memory-server** for integration tests. Run:
+
+```bash
+npm run test
+```
+
+The first run may download MongoDB binaries (cached in `.cache/mongodb-binaries`). If you see `Md5CheckFailedError`, remove that directory and run again. Key test files: `src/__tests__/zone-service.test.ts`, `src/__tests__/admin-auth.test.ts`, `src/__tests__/zone-api.test.ts`, `src/__tests__/clockin-zones.test.ts`.
 
 ## Future Improvements
 

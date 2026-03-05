@@ -2,7 +2,7 @@
 export const CLOCK_IN_DURATION_MS = 90 * 60 * 1000; // 1 hour 30 minutes
 
 /** Radius (in meters) to search for nearby clocked-in users. */
-export const NEARBY_RADIUS_METERS = 250;
+export const NEARBY_RADIUS_METERS = 350;
 
 /** Base points awarded per clock-in. */
 export const BASE_CLOCK_IN_POINTS = 5;
