@@ -192,7 +192,7 @@ export async function POST(req: NextRequest) {
       clockedInAt: now,
       expiresAt,
       pointsEarned: totalPoints,
-      bonusZoneId: bonusZone?.id ?? null,
+      bonusZoneId: bonusZone ? bonusZone._id.toString() : null,
       nearbyUserCount: nearbyCount,
     });
 
